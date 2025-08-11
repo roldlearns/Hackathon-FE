@@ -144,9 +144,6 @@ const App = () => {
   };
 
   // --- Render Logic ---
-  const heartRateProgress = (heartRate - 50) / (150 - 50) * 100;
-  const stressThresholdProgress = (stressThreshold - 70) / (120 - 70) * 100;
-
   return (
     <>
       <style>
@@ -172,7 +169,7 @@ const App = () => {
           .container { width: 100%; margin-right: auto; margin-left: auto; max-width: 1280px; }
           .mx-auto { margin-left: auto; margin-right: auto; }
           .p-4 { padding: 1rem; }
-          .md\:p-8 { padding: 2rem; }
+          .md:p-8 { padding: 2rem; }
           .min-h-screen { min-height: 100vh; }
           .flex { display: flex; }
           .items-center { align-items: center; }
@@ -180,24 +177,24 @@ const App = () => {
           .space-x-3 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.75rem; }
           .mb-8 { margin-bottom: 2rem; }
           .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
-          .md\:text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+          .md:text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
           .font-extrabold { font-weight: 800; }
           .text-indigo-700 { color: #4338ca; }
           .grid { display: grid; }
           .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-          .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .md:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .gap-8 { gap: 2rem; }
           .p-6 { padding: 1.5rem; }
           .bg-white { background-color: #fff; }
           .rounded-3xl { border-radius: 1.5rem; }
           .shadow-xl { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
           .col-span-1 { grid-column: span 1 / span 1; }
-          .md\:col-span-2 { grid-column: span 2 / span 2; }
+          .md:col-span-2 { grid-column: span 2 / span 2; }
           .text-2xl { font-size: 1.5rem; line-height: 2rem; }
           .font-bold { font-weight: 700; }
           .mb-6 { margin-bottom: 1.5rem; }
           .text-indigo-600 { color: #4f46e5; }
-          .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .sm:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .gap-6 { gap: 1.5rem; }
           .bg-rose-50 { background-color: #fff1f2; }
           .rounded-2xl { border-radius: 1rem; }
@@ -239,9 +236,9 @@ const App = () => {
           .bg-blue-600 { background-color: #2563eb; }
           .text-white { color: #fff; }
           .shadow-md { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
-          .hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+          .hover:bg-blue-700:hover { background-color: #1d4ed8; }
           .bg-red-500 { background-color: #ef4444; }
-          .hover\:bg-red-600:hover { background-color: #dc2626; }
+          .hover:bg-red-600:hover { background-color: #dc2626; }
           .mb-6 { margin-bottom: 1.5rem; }
           .block { display: block; }
           .font-medium { font-weight: 500; }
@@ -259,15 +256,15 @@ const App = () => {
           .border-2 { border-width: 2px; }
           .border-dashed { border-style: dashed; }
           .border-gray-300 { border-color: #d1d5db; }
-          .hover\:border-indigo-400:hover { border-color: #818cf8; }
+          .hover:border-indigo-400:hover { border-color: #818cf8; }
           .text-xs { font-size: 0.75rem; line-height: 1rem; }
           .text-indigo-500 { color: #6366f1; }
           .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
           .mr-2 { margin-right: 0.5rem; }
           .bg-green-500 { background-color: #22c55e; }
-          .hover\:bg-green-600:hover { background-color: #16a34a; }
+          .hover:bg-green-600:hover { background-color: #16a34a; }
           .bg-yellow-500 { background-color: #eab308; }
-          .hover\:bg-yellow-600:hover { background-color: #ca8a04; }
+          .hover:bg-yellow-600:hover { background-color: #ca8a04; }
           @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: .5; }
@@ -288,38 +285,51 @@ const App = () => {
               <h2 className="text-2xl font-bold mb-6 text-indigo-600">Live Dashboard</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
-                {/* Heart Rate Display Card */}
-                <div className="p-6 bg-rose-50 rounded-2xl flex flex-col items-center justify-center">
-                  <i className="fas fa-heartbeat text-red-500 text-4xl mb-3 animate-pulse"></i>
-                  <span className="text-sm font-semibold text-gray-600">Heart Rate</span>
-                  <span id="heart-rate-display" className="text-5xl font-extrabold text-red-600">{heartRate}</span>
-                  <span className="text-xl font-medium text-red-500">BPM</span>
-                  <span 
-                    className={`mt-4 px-3 py-1 rounded-full text-sm font-semibold transition-colors duration-300 
-                      ${isStressed ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'}`}
-                  >
-                    {isStressed ? 'Stressed' : 'Calm'}
-                  </span>
-                </div>
 
-                {/* Noise Cancellation Status Card */}
-                <div className="p-6 bg-blue-50 rounded-2xl flex flex-col items-center justify-center relative">
-                  <i className="fas fa-volume-mute text-blue-500 text-4xl mb-3"></i>
-                  <span className="text-sm font-semibold text-gray-600">Noise Cancellation</span>
-                  <span className={`text-4xl font-extrabold ${isNoiseCancellationOn ? 'text-green-600' : 'text-blue-600'}`}>
-                    {isNoiseCancellationOn ? 'On' : 'Off'}
-                  </span>
-                  <div id="noise-cancellation-indicator" style={{ display: isNoiseCancellationOn ? 'flex' : 'none' }} className="absolute top-4 right-4 h-4 w-4 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="pulse-ring bg-blue-500"></span>
+
+                  <div className="flex gap-6">
+                    {/* Heart Rate Display Card */}
+                    <div className="p-6 bg-rose-50 rounded-2xl flex flex-col items-center justify-center w-full max-w-sm">
+                      <i className="fas fa-heartbeat text-red-500 text-4xl mb-3 animate-pulse"></i>
+                      <span className="text-sm font-semibold text-gray-600">Heart Rate</span>
+                      <span id="heart-rate-display" className="text-5xl font-extrabold text-red-600">{heartRate}</span>
+                      <span className="text-xl font-medium text-red-500">BPM</span>
+                      <span 
+                        className={`mt-4 px-3 py-1 rounded-full text-sm font-semibold transition-colors duration-300 
+                          ${isStressed ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'}`}
+                      >
+                        {isStressed ? 'Stressed' : 'Calm'}
+                      </span>
+                    </div>
+
+                    {/* Noise Cancellation Status Card */}
+                    <div className="p-6 bg-blue-50 rounded-2xl flex flex-col items-center justify-center relative w-full max-w-sm">
+                      <i className="fas fa-volume-mute text-blue-500 text-4xl mb-3"></i>
+                      <span className="text-sm font-semibold text-gray-600">Noise Cancellation</span>
+                      <span className={`text-4xl font-extrabold ${isNoiseCancellationOn ? 'text-green-600' : 'text-blue-600'}`}>
+                        {isNoiseCancellationOn ? 'On' : 'Off'}
+                      </span>
+                      <div 
+                        id="noise-cancellation-indicator" 
+                        style={{ display: isNoiseCancellationOn ? 'flex' : 'none' }} 
+                        className="absolute top-4 right-4 h-4 w-4 bg-blue-500 rounded-full flex items-center justify-center"
+                      >
+                        <span className="pulse-ring bg-blue-500"></span>
+                      </div>
+                      <button 
+                        onClick={handleManualToggle}
+                        className={`mt-4 px-4 py-2 text-white font-semibold rounded-full shadow-md transition-colors duration-300 
+                          ${isNoiseCancellationOn ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                      >
+                        {isNoiseCancellationOn ? 'Turn Off' : 'Turn On'}
+                      </button>
+                    </div>
                   </div>
-                  <button 
-                    onClick={handleManualToggle}
-                    className={`mt-4 px-4 py-2 text-white font-semibold rounded-full shadow-md transition-colors duration-300 
-                      ${isNoiseCancellationOn ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700'}`}
-                  >
-                    {isNoiseCancellationOn ? 'Turn Off' : 'Turn On'}
-                  </button>
-                </div>
+
+
+
+
+                
               </div>
             </div>
 

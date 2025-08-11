@@ -1,14 +1,18 @@
-// src/App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Dashboard from "./pages/dashboard"
+import Dashboard from "./pages/dashboard";
+import Landingpage from "./pages/landingpage";
+import "./App.css";
 
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-      </Routes>
+      <div className="app-container">
+        <Routes>
+          <Route path="/" element={<Landingpage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Routes>
+      </div>
     </Router>
   );
 }
