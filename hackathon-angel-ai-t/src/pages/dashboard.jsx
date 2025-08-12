@@ -1,7 +1,60 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Navbar from '../components/navbar';
 
-// Main App component
+// Modal component that renders into document.body using a portal
+function Modal({ children, onClose, initialFocusRef }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    // prevent background scroll while modal is open
+    document.body.style.overflow = 'hidden';
+    // focus the initial element if provided
+    if (initialFocusRef && initialFocusRef.current) {
+      initialFocusRef.current.focus();
+    }
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [initialFocusRef]);
+
+  // Render overlay + dialog into document.body to avoid stacking/context issues
+  return createPortal(
+    <div
+      // full-screen overlay
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000, // as you requested
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)', // Safari fallback
+      }}
+      // Do NOT close on overlay click; we won't attach an onClick that closes.
+      aria-modal="true"
+      role="dialog"
+    >
+      {/* dialog box — stopPropagation to ensure clicks on the box don't reach overlay */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl shadow-2xl p-8 modal-content"
+        style={{
+          zIndex: 1001,
+          maxWidth: '400px',
+          width: '90%',
+          margin: '0 auto',
+          animation: 'scaleIn 0.25s ease-out',
+        }}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 const App = () => {
   // --- State Variables ---
   const [heartRate, setHeartRate] = useState(75);
@@ -10,14 +63,21 @@ const App = () => {
   const [isNoiseCancellationOn, setIsNoiseCancellationOn] = useState(false);
   const [customAudioFile, setCustomAudioFile] = useState(null);
   const [audioSource, setAudioSource] = useState('white-noise');
+  const [showNotification, setShowNotification] = useState(false);
+
+  // Replace this with dynamic name if available
+  const userName = 'Lambokalambo';
+
+  const closeBtnRef = useRef(null);
 
   // Refs for the AudioContext and source to persist across re-renders
   const audioContext = useRef(null);
   const audioBuffer = useRef(null);
   const source = useRef(null);
 
-  // A correctly encoded base64 string for a tiny silent WAV file
-  const whiteNoiseBase64 = "UklGRiQAAABXQVZFZm10IBAAAAABAAEAVFYAAFRWAAABAAgAAAAAADoAAAD2dGVzdGluZzEAAABkYXRhAAAAAA==";
+  // A tiny silent WAV (example) — keep your original base64 if needed
+  const whiteNoiseBase64 =
+    'UklGRiQAAABXQVZFZm10IBAAAAABAAEAVFYAAFRWAAABAAgAAAAAADoAAAD2dGVzdGluZzEAAABkYXRhAAAAAA==';
 
   // --- Helper Functions ---
   const base64ToArrayBuffer = (base64) => {
@@ -44,59 +104,76 @@ const App = () => {
     source.current = audioContext.current.createBufferSource();
     source.current.buffer = buffer;
     source.current.connect(audioContext.current.destination);
-    source.current.start(0);
     source.current.loop = true;
+    source.current.start(0);
   };
 
   const stopAudio = () => {
-    if (source.current) {
-      source.current.stop();
-      source.current.disconnect();
-      source.current = null;
+    try {
+      if (source.current) {
+        source.current.stop(0);
+        source.current.disconnect();
+        source.current = null;
+      }
+    } catch (e) {
+      // ignore if already stopped
     }
   };
 
   // --- UseEffects to handle logic ---
-
   // Initialize and load white noise on component mount
   useEffect(() => {
     createAudioContext();
     const arrayBuffer = base64ToArrayBuffer(whiteNoiseBase64);
-    audioContext.current.decodeAudioData(arrayBuffer)
-      .then(buffer => {
-        audioBuffer.current = buffer;
-      })
-      .catch(error => console.error('Error decoding white noise:', error));
-    
+    // decodeAudioData expects an ArrayBuffer
+    if (audioContext.current && arrayBuffer) {
+      audioContext.current
+        .decodeAudioData(arrayBuffer)
+        .then((buffer) => {
+          audioBuffer.current = buffer;
+        })
+        .catch((error) => console.error('Error decoding white noise:', error));
+    }
+
     // Cleanup on component unmount
     return () => {
       stopAudio();
       if (audioContext.current) {
-        audioContext.current.close();
+        audioContext.current.close().catch(() => {});
+        audioContext.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Effect to handle heart rate changes and trigger actions
+  const [hasShownNotification, setHasShownNotification] = useState(false);
   useEffect(() => {
-    const prevIsStressed = isStressed;
-    const currentIsStressed = heartRate >= stressThreshold;
-    setIsStressed(currentIsStressed);
+    const currentlyStressed = heartRate >= stressThreshold;
+    setIsStressed(currentlyStressed);
 
-    if (currentIsStressed && !prevIsStressed) {
-      // Trigger noise cancellation if not already on
-      handleNoiseCancellation(true);
-    } else if (!currentIsStressed && prevIsStressed) {
-      // Deactivate noise cancellation if it was on
-      handleNoiseCancellation(false);
-    }
-  }, [heartRate, stressThreshold]);
+    // update isStressed visual status
+    setIsStressed(currentlyStressed);
+
+  if (currentlyStressed && !hasShownNotification) {
+    setShowNotification(true);
+    setHasShownNotification(true); // prevent immediate reopen
+    handleNoiseCancellation(true);
+  }
+
+  // reset flag when calm again
+  if (!currentlyStressed) {
+    setHasShownNotification(false);
+    handleNoiseCancellation(false); // turn off
+  }
+}, [heartRate, stressThreshold, hasShownNotification]);
 
   // Effect to handle audio source changes
   useEffect(() => {
     if (isNoiseCancellationOn) {
       playCalmingAudio();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioSource]);
 
   // --- Event Handlers ---
@@ -122,17 +199,19 @@ const App = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         createAudioContext();
-        audioContext.current.decodeAudioData(e.target.result)
-          .then(buffer => {
+        // e.target.result is an ArrayBuffer
+        audioContext.current
+          .decodeAudioData(e.target.result)
+          .then((buffer) => {
             audioBuffer.current = buffer;
             playAudio(audioBuffer.current);
           })
-          .catch(error => console.error('Error decoding custom audio:', error));
+          .catch((error) => console.error('Error decoding custom audio:', error));
       };
       reader.readAsArrayBuffer(customAudioFile);
     }
   };
-  
+
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -144,7 +223,13 @@ const App = () => {
     }
   };
 
-  // --- Render Logic ---
+  // close handler (user must click this button)
+  const handleCloseNotification = () => {
+    setShowNotification(false);
+    // keep noise cancellation state as-is; if you want to stop audio when closing, uncomment next line:
+    // handleNoiseCancellation(false);
+  };
+
   return (
     <>
       <style>
@@ -155,6 +240,8 @@ const App = () => {
             0% { transform: scale(0.33); opacity: 1; }
             100% { transform: scale(1.5); opacity: 0; }
           }
+  }
+          .modal-content {animation: scaleIn 0.25s ease-out;}
           .pulse-ring { animation: pulse-ring 2s cubic-bezier(0.24, 0, 0.44, 1) infinite; }
           .custom-file-input { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; }
           input[type="range"] { -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; width: 100%; }
@@ -231,7 +318,6 @@ const App = () => {
           .h-4 { height: 1rem; }
           .w-4 { width: 1rem; }
           .bg-blue-500 { background-color: #3b82f6; }
-          .mt-4 { margin-top: 1rem; }
           .px-4 { padding-left: 1rem; padding-right: 1rem; }
           .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
           .bg-blue-600 { background-color: #2563eb; }
@@ -240,7 +326,6 @@ const App = () => {
           .hover:bg-blue-700:hover { background-color: #1d4ed8; }
           .bg-red-500 { background-color: #ef4444; }
           .hover:bg-red-600:hover { background-color: #dc2626; }
-          .mb-6 { margin-bottom: 1.5rem; }
           .block { display: block; }
           .font-medium { font-weight: 500; }
           .text-gray-700 { color: #374151; }
@@ -272,22 +357,58 @@ const App = () => {
           }
         `}
       </style>
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-     < Navbar  />
-      <div className="bg-gray-100 text-gray-800">
-        <div className="container mx-auto p-4 md:p-8 min-h-screen">
-          {/* Header */}
-          <header className="flex items-center justify-center space-x-3 mb-8">
-          </header>
 
-          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Live Dashboard Section */}
-            <div className="p-6 bg-white rounded-3xl shadow-xl col-span-1 md:col-span-2">
-              <h2 className="text-2xl font-bold mb-6 text-indigo-600">Live Dashboard</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      />
 
+      {/* Modal (portal) */}
+      {showNotification && (
+        <Modal onClose={handleCloseNotification} initialFocusRef={closeBtnRef}>
+          {/* Icon & Header */}
+          <div className="flex flex-col items-center p-6">
+            <div className="bg-red-100 text-red-600 p-4 rounded-full shadow-md mb-4">
+              <i className="fas fa-exclamation-triangle text-3xl"></i>
+            </div>
+            <h2 className="text-2xl font-bold text-red-600 mb-2">
+              Sensory Overload Alert
+            </h2>
+            <p className="text-gray-700 text-center leading-relaxed mb-6">
+              <span className="font-semibold">{userName}</span> is currently
+              experiencing <span className="text-red-500 font-semibold">sensory overload</span>.
+              Please assist them as soon as possible.
+            </p>
+            <button
+              ref={closeBtnRef}
+              onClick={handleCloseNotification}
+              className="px-8 py-2 bg-gradient-to-r from-red-500 to-red-600 text-black font-semibold rounded-full shadow-lg hover:from-red-600 hover:to-red-700 transition-transform transform hover:scale-105"
+            >
+              Close Alert
+            </button>
+          </div>
+        </Modal>
+      )}
 
+      {/* Main Page — add blur + block pointer events when modal active as extra insurance */}
+      <div
+        aria-hidden={showNotification}
+        style={{
+          filter: showNotification ? 'blur(3px)' : 'none',
+          userSelect: showNotification ? 'none' : 'auto',
+        }}
+      >
+        <Navbar />
+        <div className="bg-gray-100 text-gray-800">
+          <div className="container mx-auto p-4 md:p-8 min-h-screen">
+            {/* Header */}
+            <header className="flex items-center justify-center space-x-3 mb-8"></header>
 
+            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Live Dashboard Section */}
+              <div className="p-6 bg-white rounded-3xl shadow-xl col-span-1 md:col-span-2">
+                <h2 className="text-2xl font-bold mb-6 text-indigo-600">Live Dashboard</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="flex gap-6">
                     {/* Heart Rate Display Card */}
                     <div className="p-6 bg-rose-50 rounded-2xl flex flex-col items-center justify-center w-full max-w-sm">
@@ -295,7 +416,7 @@ const App = () => {
                       <span className="text-sm font-semibold text-gray-600">Heart Rate</span>
                       <span id="heart-rate-display" className="text-5xl font-extrabold text-red-600">{heartRate}</span>
                       <span className="text-xl font-medium text-red-500">BPM</span>
-                      <span 
+                      <span
                         className={`mt-4 px-3 py-1 rounded-full text-sm font-semibold transition-colors duration-300 
                           ${isStressed ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'}`}
                       >
@@ -310,14 +431,14 @@ const App = () => {
                       <span className={`text-4xl font-extrabold ${isNoiseCancellationOn ? 'text-green-600' : 'text-blue-600'}`}>
                         {isNoiseCancellationOn ? 'On' : 'Off'}
                       </span>
-                      <div 
-                        id="noise-cancellation-indicator" 
-                        style={{ display: isNoiseCancellationOn ? 'flex' : 'none' }} 
+                      <div
+                        id="noise-cancellation-indicator"
+                        style={{ display: isNoiseCancellationOn ? 'flex' : 'none' }}
                         className="absolute top-4 right-4 h-4 w-4 bg-blue-500 rounded-full flex items-center justify-center"
                       >
                         <span className="pulse-ring bg-blue-500"></span>
                       </div>
-                      <button 
+                      <button
                         onClick={handleManualToggle}
                         className={`mt-4 px-4 py-2 text-white font-semibold rounded-full shadow-md transition-colors duration-300 
                           ${isNoiseCancellationOn ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700'}`}
@@ -326,120 +447,127 @@ const App = () => {
                       </button>
                     </div>
                   </div>
-
-
-
-
-                
-              </div>
-            </div>
-
-            {/* Settings Dashboard Section */}
-            <div className="p-6 bg-white rounded-3xl shadow-xl">
-              <h2 className="text-2xl font-bold mb-6 text-indigo-600">Settings</h2>
-
-              {/* Heart Rate Slider for Simulation */}
-              <div className="mb-6">
-                <label htmlFor="heart-rate-slider" className="block text-sm font-medium text-gray-700 mb-2">Simulate Heart Rate (BPM)</label>
-                <input 
-                  type="range" 
-                  id="heart-rate-slider" 
-                  min="50" 
-                  max="150" 
-                  value={heartRate} 
-                  onChange={(e) => setHeartRate(parseInt(e.target.value))}
-                  style={{ '--progress': `${(heartRate - 50) / (150 - 50) * 100}%` }}
-                  className="w-full"
-                />
-                <span className="text-sm text-gray-500 mt-2">Adjust heart rate to trigger stress response.</span>
-              </div>
-
-              {/* Stress Threshold Setting */}
-              <div className="mb-6">
-                <label 
-                  htmlFor="stress-threshold" 
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                </label>
-              </div>
-
-
-              {/* Calming Audio Source Toggle */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Audio Source</label>
-                <div className="flex items-center space-x-4">
-                  <label className="inline-flex items-center">
-                    <input 
-                      type="radio" 
-                      name="audio-source" 
-                      value="white-noise" 
-                      checked={audioSource === 'white-noise'} 
-                      onChange={() => setAudioSource('white-noise')}
-                      className="form-radio text-indigo-600" 
-                      id="white-noise-radio" 
-                    />
-                    <span className="ml-2">White Noise</span>
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input 
-                      type="radio" 
-                      name="audio-source" 
-                      value="custom-audio" 
-                      checked={audioSource === 'custom-audio'} 
-                      onChange={() => setAudioSource('custom-audio')}
-                      className="form-radio text-indigo-600" 
-                      id="custom-audio-radio"
-                    />
-                    <span className="ml-2">Custom Audio</span>
-                  </label>
                 </div>
               </div>
 
-              {/* Custom Audio Upload */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Upload Custom Calming Audio</label>
-                <div className="relative border-2 border-dashed border-gray-300 p-4 rounded-xl text-center hover:border-indigo-400 transition-colors duration-300">
-                  <input type="file" id="audio-upload" className="custom-file-input" accept=".mp3, .wav" onChange={handleFileUpload} />
-                  <p className="text-gray-500 text-sm">Click to upload or drag and drop a file</p>
-                  <p id="uploaded-file-name" className="text-xs text-indigo-500 mt-2">{customAudioFile ? customAudioFile.name : ''}</p>
+              {/* Settings Dashboard Section */}
+              <div className="p-6 bg-white rounded-3xl shadow-xl">
+                <h2 className="text-2xl font-bold mb-6 text-indigo-600">Settings</h2>
+
+                {/* Heart Rate Slider for Simulation */}
+                <div className="mb-6">
+                  <label htmlFor="heart-rate-slider" className="block text-sm font-medium text-gray-700 mb-2">Simulate Heart Rate (BPM)</label>
+                  <input
+                    type="range"
+                    id="heart-rate-slider"
+                    min="50"
+                    max="150"
+                    value={heartRate}
+                    onChange={(e) => setHeartRate(parseInt(e.target.value))}
+                    style={{ '--progress': `${(heartRate - 50) / (150 - 50) * 100}%` }}
+                    className="w-full"
+                  />
+                  <span className="text-sm text-gray-500 mt-2">Adjust heart rate to trigger stress response.</span>
+                </div>
+
+                {/* Stress Threshold Setting (kept but empty label in original) */}
+                <div className="mb-6">
+                  <label htmlFor="stress-threshold" className="block text-sm font-medium text-gray-700 mb-2"></label>
+                </div>
+
+                {/* Calming Audio Source Toggle */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Audio Source</label>
+                  <div className="flex items-center space-x-4">
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        name="audio-source"
+                        value="white-noise"
+                        checked={audioSource === 'white-noise'}
+                        onChange={() => setAudioSource('white-noise')}
+                        className="form-radio text-indigo-600"
+                        id="white-noise-radio"
+                      />
+                      <span className="ml-2">White Noise</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        name="audio-source"
+                        value="custom-audio"
+                        checked={audioSource === 'custom-audio'}
+                        onChange={() => setAudioSource('custom-audio')}
+                        className="form-radio text-indigo-600"
+                        id="custom-audio-radio"
+                      />
+                      <span className="ml-2">Custom Audio</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Custom Audio Upload */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Custom Calming Audio</label>
+                  <div className="relative border-2 border-dashed border-gray-300 p-4 rounded-xl text-center hover:border-indigo-400 transition-colors duration-300">
+                    <input type="file" id="audio-upload" className="custom-file-input" accept=".mp3, .wav" onChange={handleFileUpload} />
+                    <p className="text-gray-500 text-sm">Click to upload or drag and drop a file</p>
+                    <p id="uploaded-file-name" className="text-xs text-indigo-500 mt-2">{customAudioFile ? customAudioFile.name : ''}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Audio Playback Controls */}
-            <div className="p-6 bg-white rounded-3xl shadow-xl">
-              <h2 className="text-2xl font-bold mb-6 text-indigo-600">Audio Playback</h2>
-              <div className="flex flex-col space-y-4">
-                <p className="text-sm font-medium text-gray-700">
-                  Currently Playing: <span className="font-bold">
-                    {isNoiseCancellationOn ? (audioSource === 'white-noise' ? 'White Noise' : (customAudioFile ? customAudioFile.name : 'Custom Audio')) : 'None'}
-                  </span>
-                </p>
-                <div className="flex space-x-4">
-                  <button 
-                    onClick={() => playCalmingAudio()}
-                    className="flex-1 px-4 py-2 bg-green-500 text-white font-semibold rounded-full hover:bg-green-600 transition-colors duration-300"
-                  >
-                    <i className="fas fa-play mr-2"></i> Play
-                  </button>
-                  <button 
-                    onClick={() => audioContext.current.suspend()}
-                    className="flex-1 px-4 py-2 bg-yellow-500 text-white font-semibold rounded-full hover:bg-yellow-600 transition-colors duration-300"
-                  >
-                    <i className="fas fa-pause mr-2"></i> Pause
-                  </button>
-                  <button 
-                    onClick={() => stopAudio()}
-                    className="flex-1 px-4 py-2 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 transition-colors duration-300"
-                  >
-                    <i className="fas fa-stop mr-2"></i> Stop
-                  </button>
+              {/* Audio Playback Controls */}
+              <div className="p-6 bg-white rounded-3xl shadow-xl">
+                <h2 className="text-2xl font-bold mb-6 text-indigo-600">Audio Playback</h2>
+                <div className="flex flex-col space-y-4">
+                  <p className="text-sm font-medium text-gray-700">
+                    Currently Playing:{' '}
+                    <span className="font-bold">
+                      {isNoiseCancellationOn ? (audioSource === 'white-noise' ? 'White Noise' : (customAudioFile ? customAudioFile.name : 'Custom Audio')) : 'None'}
+                    </span>
+                  </p>
+                  <div className="flex space-x-4">
+                    <button
+                      onClick={() => {
+                        // ensure audio context resumed if needed
+                        createAudioContext();
+                        if (audioContext.current && audioContext.current.state === 'suspended') {
+                          audioContext.current.resume().then(() => {
+                            setIsNoiseCancellationOn(true);
+                            playCalmingAudio();
+                          });
+                        } else {
+                          setIsNoiseCancellationOn(true);
+                          playCalmingAudio();
+                        }
+                      }}
+                      className="flex-1 px-4 py-2 bg-green-500 text-white font-semibold rounded-full hover:bg-green-600 transition-colors duration-300"
+                    >
+                      <i className="fas fa-play mr-2"></i> Play
+                    </button>
+                    <button
+                      onClick={() => audioContext.current && audioContext.current.suspend()}
+                      className="flex-1 px-4 py-2 bg-yellow-500 text-white font-semibold rounded-full hover:bg-yellow-600 transition-colors duration-300"
+                    >
+                      <i className="fas fa-pause mr-2"></i> Pause
+                    </button>
+                    <button
+                      onClick={() => {
+                        stopAudio();
+                        setIsNoiseCancellationOn(false);
+                      }}
+                      className="flex-1 px-4 py-2 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 transition-colors duration-300"
+                    >
+                      <i className="fas fa-stop mr-2"></i> Stop
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </div> {/* end main content */}
     </>
   );
 };
