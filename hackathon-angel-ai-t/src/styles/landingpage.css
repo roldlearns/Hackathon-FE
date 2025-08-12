@@ -267,3 +267,83 @@ body {
 .mt-4 {
   margin-top: 1rem;
 }
+
+/* New CSS for Navbar */
+.bg-white {
+    background-color: #ffffff;
+}
+
+.shadow-md {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.py-4 {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.px-8 {
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+/* Fade-in animation for page load */
+@keyframes fadeInUp {
+  from {opacity: 0; transform: translateY(20px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+.bg-gray-100 {
+  animation: fadeInUp 1s ease-out;
+}
+
+/* HERO SECTION */
+.text-5xl, .md\:text-7xl {
+  background: linear-gradient(to right, #4f46e5, #4338ca);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.max-w-2xl {
+  animation: fadeInUp 1.3s ease-out;
+}
+
+/* BUTTONS */
+.px-6.py-3 {
+  transition: transform 0.25s ease, background-color 0.25s ease;
+}
+.px-6.py-3:hover {
+  transform: scale(1.05);
+}
+
+/* FEATURE CARDS */
+.p-6.bg-white.rounded-3xl.shadow-xl {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.p-6.bg-white.rounded-3xl.shadow-xl:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+}
+
+/* CTA SECTION */
+.bg-indigo-700 {
+  background: linear-gradient(to right, #4f46e5, #4338ca) !important;
+}
+.px-8.py-4 {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+.px-8.py-4:hover {
+  background-color: white;
+  color: #4338ca !important;
+}
+
+/* FOOTER LINKS */
+.text-sm.font-medium {
+  transition: color 0.25s ease;
+}
+.text-sm.font-medium:hover {
+  color: white !important;
+}

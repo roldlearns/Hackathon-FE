@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Navbar from '../components/navbar';
 
 // Main App component
 const App = () => {
@@ -272,11 +273,11 @@ const App = () => {
         `}
       </style>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+     < Navbar  />
       <div className="bg-gray-100 text-gray-800">
         <div className="container mx-auto p-4 md:p-8 min-h-screen">
           {/* Header */}
           <header className="flex items-center justify-center space-x-3 mb-8">
-            <h1 className="text-3xl md:text-4xl font-extrabold text-indigo-700">Angel-AI-t</h1>
           </header>
 
           <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">

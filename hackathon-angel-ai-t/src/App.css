@@ -1,3 +1,8 @@
+.app-container {
+  width: 100% !important;
+  margin: 0 auto !important;
+}
+
 .card-container {
   display: flex;
   gap: 1.5rem;
