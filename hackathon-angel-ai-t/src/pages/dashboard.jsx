@@ -356,18 +356,13 @@ const App = () => {
 
               {/* Stress Threshold Setting */}
               <div className="mb-6">
-                <label htmlFor="stress-threshold-slider" className="block text-sm font-medium text-gray-700 mb-2">Stress Heart Rate Threshold: <span id="threshold-value">{stressThreshold}</span> BPM</label>
-                <input 
-                  type="range" 
-                  id="stress-threshold-slider" 
-                  min="70" 
-                  max="120" 
-                  value={stressThreshold} 
-                  onChange={(e) => setStressThreshold(parseInt(e.target.value))}
-                  style={{ '--progress': `${(stressThreshold - 70) / (120 - 70) * 100}%` }}
-                  className="w-full"
-                />
+                <label 
+                  htmlFor="stress-threshold" 
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                </label>
               </div>
+
 
               {/* Calming Audio Source Toggle */}
               <div className="mb-6">
