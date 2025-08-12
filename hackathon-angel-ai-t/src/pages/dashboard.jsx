@@ -241,6 +241,9 @@ const App = () => {
             100% { transform: scale(1.5); opacity: 0; }
           }
   }
+          .bg-teal-50 { color: #0d9488 ; }
+          .text-teal-500 { color: #14b8a6; }
+          .text-teal-600 { color: #0d9488; }
           .modal-content {animation: scaleIn 0.25s ease-out;}
           .pulse-ring { animation: pulse-ring 2s cubic-bezier(0.24, 0, 0.44, 1) infinite; }
           .custom-file-input { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; }
@@ -399,7 +402,7 @@ const App = () => {
         }}
       >
         <Navbar />
-        <div className="bg-gray-100 text-gray-800">
+        <div className="bg-teal-50 text-gray-800">
           <div className="container mx-auto p-4 md:p-8 min-h-screen">
             {/* Header */}
             <header className="flex items-center justify-center space-x-3 mb-8"></header>
@@ -409,15 +412,30 @@ const App = () => {
               <div className="p-6 bg-white rounded-3xl shadow-xl col-span-1 md:col-span-2">
                 <h2 className="text-2xl font-bold mb-6 text-indigo-600">Live Dashboard</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="flex gap-6">
+                  <div className="flex gap-6 bg-teal-50">
                     {/* Heart Rate Display Card */}
-                    <div className="p-6 bg-rose-50 rounded-2xl flex flex-col items-center justify-center w-full max-w-sm">
-                      <i className="fas fa-heartbeat text-red-500 text-4xl mb-3 animate-pulse"></i>
+                    <div
+                      className={`p-6  rounded-2xl flex flex-col items-center justify-center w-full max-w-sm 
+                        ${isStressed ? 'bg-rose-50' : 'bg-blue-50'}`}
+                    >
+                      <i
+                        className={`fas fa-heartbeat text-4xl mb-3 animate-pulse 
+                          ${isStressed ? 'text-red-500' : 'text-teal-500'}`}
+                      ></i>
                       <span className="text-sm font-semibold text-gray-600">Heart Rate</span>
-                      <span id="heart-rate-display" className="text-5xl font-extrabold text-red-600">{heartRate}</span>
-                      <span className="text-xl font-medium text-red-500">BPM</span>
                       <span
-                        className={`mt-4 px-3 py-1 rounded-full text-sm font-semibold transition-colors duration-300 
+                        id="heart-rate-display"
+                        className={`text-5xl font-extrabold ${isStressed ? 'text-red-600' : 'text-teal-600'}`}
+                      >
+                        {heartRate}
+                      </span>
+                      <span
+                        className={`text-xl font-medium ${isStressed ? 'text-red-500' : 'text-teal-500'}`}
+                      >
+                        BPM
+                      </span>
+                      <span
+                        className={`mt-4 px-3 py-2 rounded-full text-sm font-semibold transition-colors duration-300 
                           ${isStressed ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'}`}
                       >
                         {isStressed ? 'Stressed' : 'Calm'}
